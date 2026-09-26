@@ -59,12 +59,12 @@ shouldCancel      function() return true to cancel
 **Modes:** `safe` skips unsupported properties quietly, `strict` errors on the first one, `debug` warns on every skip, `silent` prints nothing.
 
 ## Module API
+The script returns a module table. Store it when you load the script (`local Walke = <what the script returns>`) to use these:
 ```lua
-local Walke = loadstring(game:HttpGet("LINK"))()
 Walke.serialize(root, options)           -- returns xml, stats, valid, message (no file written)
 Walke.save(root, "file.rbxmx", options)  -- returns { ok, stage, xml, stats, err }
-Walke.Version                            -- "2.1"
-Walke.Capabilities                       -- what your executor supports
+Walke.Version                            -- Obviously the actual version which is 2.1
+Walke.Capabilities                       -- what your executor supports (very important)
 ```
 
 ## Executor Requirements
@@ -79,13 +79,13 @@ Walke.Capabilities                       -- what your executor supports
 Check `Walke.Capabilities` to see what your executor supports.
 
 ## Limits
-- ServerScriptService and ServerStorage never reach the client. No client-side tool can save them, Walke included.
-- Scripts are only as good as your executor's decompiler.
-- Without hidden property access, unions save with no geometry. Use `holo` to mark them.
-- Terrain over `terrainCap` is skipped. The restorer script has to be run in Studio's command bar to rebuild it.
-- Attribute types outside string, bool, number, Vector2/3, Color3, UDim/UDim2, NumberRange, Rect and BrickColor are dropped and counted as `attrLost`.
-- References to instances outside the save become nil.
-- Terrain, Camera and CoreGui are excluded from the tree.
+- ServerScriptService and ServerStorage never reach the client, literally no client side tool can save them, (Walke included and this goes for YOU oblivision)
+- Scripts are only as good as your executor decompiler
+- Without hidden property access, unions save with no geometry, so use `holo` to mark them
+- Terrain over `terrainCap` is skipped, so the restorer script has to be run in Studio command bar to rebuild it.
+- Attribute types outside string, bool, number, Vector2/3, Color3, UDim/UDim2, NumberRange, Rect and BrickColor are dropped and counted as `attrLost`
+- References to instances outside the save become nil
+- Terrain, Camera and CoreGui are excluded from the tree
 
 Created by **Weegee_MLG**
-Credits: **The Skin Walke Team**
+Credits: **The Skin Walke Team <3**
