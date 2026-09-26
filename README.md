@@ -12,7 +12,7 @@ Walke takes any Instance, a list of Instances, or the entire game and writes it 
 
 ## Why it's more than a serializer, I needed to clarify this 😭✌️
 - **Validated output** - every file is checked before it's written: root tags, balanced items, duplicate referents, dangling references. A broken file is never saved silently
-- **Full property capture** - It reads every exposed property through `getproperties`, backed by a built-in registry of 60+ class definitions
+- **Full property capture** - It reads every exposed property through `getproperties`, backed by a built in registry of 60+ class definitions
 - **Minified** - properties equal to the class default are dropped. Smaller files, faster loads
 - **Attributes and Tags** - preserved in Roblox native binary format
 - **Scripts** - decompiled when your executor supports it. `rescue` rebuilds ModuleScripts that return data tables
