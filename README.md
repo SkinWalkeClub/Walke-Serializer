@@ -10,7 +10,7 @@ This is not another saveinstance clone, Nuh uh, like most serializers dump whate
 ## What it does
 Walke takes any Instance, a list of Instances, or the entire game and writes it to a `.rbxmx` file in your executor's workspace folder, ready to open in Roblox Studio.
 
-## Why it's more than a serializer and WHY I needed to clarify this
+## Why it's more than a serializer, I needed to clarify this 😭✌️
 - **Validated output** - every file is checked before it's written: root tags, balanced items, duplicate referents, dangling references. A broken file is never saved silently
 - **Full property capture** - It reads every exposed property through `getproperties`, backed by a built-in registry of 60+ class definitions
 - **Minified** - properties equal to the class default are dropped. Smaller files, faster loads
