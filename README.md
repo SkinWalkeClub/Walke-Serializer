@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://media.discordapp.net/attachments/1490759185129017486/1553491870036922519/18bbf4cf2b8f40c5b0294ef383858311.png?ex=6ab9718c&is=6ab8200c&hm=97683b1ccda05bfe15cada09bdc1fff40c55cb4c3c856630879fdf4534e8856f&=&format=webp&quality=lossless&width=768&height=575" width="400" alt="Walke Serializer">
+  <img src="https://media.discordapp.net/attachments/1490759185129017486/1553531866290851941/walkeserializer.gif?ex=6ab996cc&is=6ab8454c&hm=b000cd0d13e26504408fe4b839b82446553155818a15989a0d6b86700e3bfebc&=&width=512&height=219" width="600" alt="Walke Serializer">
 </p>
 
 # Walke Serializer v2.2
