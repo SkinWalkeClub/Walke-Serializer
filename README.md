@@ -10,17 +10,17 @@ This is not another saveinstance clone, Nuh uh, like most serializers dump whate
 ## What it does
 Walke takes any Instance, a list of Instances, or the entire game and writes it to a `.rbxmx` file in your executor's workspace folder, ready to open in Roblox Studio.
 
-## Why it's more than a serializer
+## Why it's more than a serializer and WHY I needed to clarify this
 - **Validated output** - every file is checked before it's written: root tags, balanced items, duplicate referents, dangling references. A broken file is never saved silently
-- **Full property capture** - reads every exposed property through `getproperties`, backed by a built-in registry of 60+ class definitions
+- **Full property capture** - It reads every exposed property through `getproperties`, backed by a built-in registry of 60+ class definitions
 - **Minified** - properties equal to the class default are dropped. Smaller files, faster loads
-- **Attributes and Tags** - preserved in Roblox's native binary format
+- **Attributes and Tags** - preserved in Roblox native binary format
 - **Scripts** - decompiled when your executor supports it. `rescue` rebuilds ModuleScripts that return data tables
 - **Terrain** - voxel data is packed into a restorer script that rebuilds the terrain in Studio
 - **Unions** - Walke pulls CSG geometry from hidden properties when the executor allows it, use native for full engine level unions, or holo to mark where they are (sounds like I exaggerate in engine level, but i'm not actually this is open source so go ahead and check and skid whatever u want lol)
-- **Assets** - optional download of meshes, textures, images and sounds.
-- **Built for big games** - adaptive yielding so your client doesn't freeze, chunked writes for files over 20 MB.
-- **Full report** - every save prints instances, properties, attributes, tags, skipped and unsupported props, size, time and validation result.
+- **Assets** - optional download of meshes, textures, images and sounds
+- **Built for big games** - adaptive yielding so your client doesn't freeze, chunked writes for files over 20 MB
+- **Full report** - every save prints instances, properties, attributes, tags, skipped and unsupported props, size, time and validation result
 
 ## Commands
 Load the script (Or just get in the .lua file directly from this repository)
