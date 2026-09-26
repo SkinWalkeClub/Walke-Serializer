@@ -23,7 +23,11 @@ Walke takes any Instance, a list of Instances, or the entire game and writes it 
 - **Full report** - every save prints instances, properties, attributes, tags, skipped and unsupported props, size, time and validation result.
 
 ## Commands
-Load the script, then use `walkesave`. It's also registered as `saveinstance` if your executor doesn't already have one.
+Load the script (Or just get in the .lua file directly from this repository)
+```lua
+loadstring(game:HttpGet("https://raw.githubusercontent.com/SkinWalkeClub/Walke-Serializer/main/WalkeSerializer.lua"))()
+```
+then use `walkesave`. It's also registered as `saveinstance` if your executor doesn't already have one.
 ```lua
 walkesave()                              -- well this is the whole game, saved as <PlaceId>.rbxmx
 walkesave(workspace.Map)                 -- one instance, saved as <Name>.rbxmx
