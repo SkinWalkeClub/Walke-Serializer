@@ -57,18 +57,13 @@ pcall(function() CS = game:GetService("CollectionService") end)
 local nsi
 do
 	local genv = (getgenv and getgenv()) or _G or {}
-	local stored = rawget(genv, "__WALKE_NSI")
-	if stored == nil then
-		local f
-		if type(saveinstance) == "function" then f = saveinstance
-		elseif type(genv.saveinstance) == "function" then f = genv.saveinstance
-		elseif type(synsaveinstance) == "function" then f = synsaveinstance
-		elseif type(genv.synsaveinstance) == "function" then f = genv.synsaveinstance end
-		genv.__WALKE_NSI = f or false
-		nsi = f or nil
-	elseif stored then
-		nsi = stored
-	end
+	local mine = rawget(genv, "__WALKE_API")
+	local cand
+	if type(saveinstance) == "function" then cand = saveinstance
+	elseif type(genv.saveinstance) == "function" then cand = genv.saveinstance
+	elseif type(synsaveinstance) == "function" then cand = synsaveinstance
+	elseif type(genv.synsaveinstance) == "function" then cand = genv.synsaveinstance end
+	if cand and cand ~= mine then nsi = cand end
 end
 
 local function clean(s)
@@ -1122,6 +1117,7 @@ end
 
 local g = getgenv and getgenv() or _G
 g.walkesave = api
+g.__WALKE_API = api
 if not g.saveinstance then g.saveinstance = api end
 
 return M
