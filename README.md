@@ -2,7 +2,7 @@
   <img src="https://media.discordapp.net/attachments/1490759185129017486/1553491870036922519/18bbf4cf2b8f40c5b0294ef383858311.png?ex=6ab9718c&is=6ab8200c&hm=97683b1ccda05bfe15cada09bdc1fff40c55cb4c3c856630879fdf4534e8856f&=&format=webp&quality=lossless&width=768&height=575" width="400" alt="Walke Serializer">
 </p>
 
-# Walke Serializer v2.1
+# Walke Serializer v2.2
 **Presented by The Skin Walke Team and it's Owner**
 
 This is not another saveinstance clone, Nuh uh, like most serializers dump whatever they can read and hope Studio opens the file, Walke was built to produce a file that actually loads, keeps what matters, and tells you EXACTLY what it saved and what it couldn't
@@ -17,7 +17,7 @@ Walke takes any Instance, a list of Instances, or the entire game and writes it 
 - **Attributes and Tags** - preserved in Roblox's native binary format.
 - **Scripts** - decompiled when your executor supports it. `rescue` rebuilds ModuleScripts that return data tables.
 - **Terrain** - voxel data is packed into a restorer script that rebuilds the terrain in Studio.
-- **Unions** - CSG geometry recovered through hidden properties. If that fails, `holo` marks where they were.
+- **Unions** - Walke pulls CSG geometry from hidden properties when the executor allows it, use native for full engine level unions, or holo to mark where they are
 - **Assets** - optional download of meshes, textures, images and sounds.
 - **Built for big games** - adaptive yielding so your client doesn't freeze, chunked writes for files over 20 MB.
 - **Full report** - every save prints instances, properties, attributes, tags, skipped and unsupported props, size, time and validation result.
@@ -28,7 +28,7 @@ Load the script, then use `walkesave`. It's also registered as `saveinstance` if
 walkesave()                              -- well this is the whole game, saved as <PlaceId>.rbxmx
 walkesave(workspace.Map)                 -- one instance, saved as <Name>.rbxmx
 walkesave({ workspace.A, workspace.B })  -- several instances, saved as selection.rbxmx
-walkesave({ object = workspace.Map, filename = "Map", terrain = true })  -- with options!!!!!
+walkesave({ object = workspace.Map, filename = "Map", terrain = true })  -- with options!!!! (u can modify this to your liking, that's why I present the options down there)
 ```
 Options go in the same table as `object`, or under `options = { ... }`.
 
@@ -55,6 +55,8 @@ maxDepth          max hierarchy depth (default 4000)
 yield             false = no yielding (faster, may freeze)
 onProgress        function(instances, items)
 shouldCancel      function() return true to cancel
+native            true  = hand the whole save to your executor own saveinstance (best unions/meshes)
+nativeArgs        { ... } = overrides passed to that native saver
 ```
 **Modes:** `safe` skips unsupported properties quietly, `strict` errors on the first one, `debug` warns on every skip, `silent` prints nothing.
 
@@ -63,7 +65,7 @@ The script returns a module table. Store it when you load the script (`local Wal
 ```lua
 Walke.serialize(root, options)           -- returns xml, stats, valid, message (no file written)
 Walke.save(root, "file.rbxmx", options)  -- returns { ok, stage, xml, stats, err }
-Walke.Version                            -- Obviously the actual version which is 2.1
+Walke.Version                            -- Obviously the actual version which is 2.2
 Walke.Capabilities                       -- what your executor supports (very important)
 ```
 
@@ -79,10 +81,10 @@ Walke.Capabilities                       -- what your executor supports (very im
 Check `Walke.Capabilities` to see what your executor supports.
 
 ## Limits
-- ServerScriptService and ServerStorage never reach the client, literally no client side tool can save them, (Walke included and this goes for YOU oblivision)
+- ServerScriptService and ServerStorage never reach the client, literally no client side tool can save them, (Walke included and this goes for YOU jaydog)
 - Scripts are only as good as your executor decompiler
 - Without hidden property access, unions save with no geometry, so use `holo` to mark them
-- Terrain over `terrainCap` is skipped, so the restorer script has to be run in Studio command bar to rebuild it.
+- Terrain is rebuilt by running the injected restorer script in Studio. Terrain larger than terrainCap per axis is skipped.
 - Attribute types outside string, bool, number, Vector2/3, Color3, UDim/UDim2, NumberRange, Rect and BrickColor are dropped and counted as `attrLost`
 - References to instances outside the save become nil
 - Terrain, Camera and CoreGui are excluded from the tree
