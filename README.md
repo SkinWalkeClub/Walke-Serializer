@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="assets/logo.png" alt="Walke Serializer" width="320">
+  <img src="https://media.discordapp.net/attachments/1490759185129017486/1553491870036922519/18bbf4cf2b8f40c5b0294ef383858311.png?ex=6ab9718c&is=6ab8200c&hm=97683b1ccda05bfe15cada09bdc1fff40c55cb4c3c856630879fdf4534e8856f&=&format=webp&quality=lossless&width=768&height=575" width="400" alt="Walke Serializer">
 </p>
 
 # Walke Serializer v2.1
-**Presented by The Skin Walke Team**
+**Presented by The Skin Walke Team and it's Owner**
 
-This is not another saveinstance clone. Most serializers dump whatever they can read and hope Studio opens the file. Walke was built to produce a file that actually loads, keeps what matters, and tells you exactly what it saved and what it couldn't.
+This is not another saveinstance clone, Nuh uh, like most serializers dump whatever they can read and hope Studio opens the file, Walke was built to produce a file that actually loads, keeps what matters, and tells you EXACTLY what it saved and what it couldn't
 
 ## What it does
 Walke takes any Instance, a list of Instances, or the entire game and writes it to a `.rbxmx` file in your executor's workspace folder, ready to open in Roblox Studio.
@@ -25,10 +25,10 @@ Walke takes any Instance, a list of Instances, or the entire game and writes it 
 ## Commands
 Load the script, then use `walkesave`. It's also registered as `saveinstance` if your executor doesn't already have one.
 ```lua
-walkesave()                              -- whole game, saved as <PlaceId>.rbxmx
+walkesave()                              -- well this is the whole game, saved as <PlaceId>.rbxmx
 walkesave(workspace.Map)                 -- one instance, saved as <Name>.rbxmx
 walkesave({ workspace.A, workspace.B })  -- several instances, saved as selection.rbxmx
-walkesave({ object = workspace.Map, filename = "Map", terrain = true })  -- with options
+walkesave({ object = workspace.Map, filename = "Map", terrain = true })  -- with options!!!!!
 ```
 Options go in the same table as `object`, or under `options = { ... }`.
 
