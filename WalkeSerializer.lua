@@ -1,5 +1,5 @@
 --=============================================================================
---                        Walke Serializer v2.1
+--                        Walke Serializer v2.2
 --                 I don't think this will need updates
 --               unless Roblox adds new properties, classes,
 --              or changes existing types in their engine API
@@ -53,6 +53,23 @@ do
 end
 local CS
 pcall(function() CS = game:GetService("CollectionService") end)
+
+local nsi
+do
+	local genv = (getgenv and getgenv()) or _G or {}
+	local stored = rawget(genv, "__WALKE_NSI")
+	if stored == nil then
+		local f
+		if type(saveinstance) == "function" then f = saveinstance
+		elseif type(genv.saveinstance) == "function" then f = genv.saveinstance
+		elseif type(synsaveinstance) == "function" then f = synsaveinstance
+		elseif type(genv.synsaveinstance) == "function" then f = genv.synsaveinstance end
+		genv.__WALKE_NSI = f or false
+		nsi = f or nil
+	elseif stored then
+		nsi = stored
+	end
+end
 
 local function clean(s)
 	return (tostring(s):gsub("[%z\1-\8\11\12\14-\31]", ""))
@@ -895,7 +912,7 @@ end
 
 local M = {}
 
-M.Version = "2.1"
+M.Version = "2.2"
 M.Capabilities = {
 	deep = gp ~= nil,
 	decompile = dec ~= nil,
@@ -914,6 +931,7 @@ M.Capabilities = {
 	archivableFilter = true,
 	meshInitialSize = ghp ~= nil,
 	unions = (ghp ~= nil) or (sscript ~= nil),
+	native = nsi ~= nil,
 	ignoreClasses = true,
 	noScripts = true,
 	cancellable = true,
@@ -993,8 +1011,34 @@ function M.serialize(root, opt)
 	return xml, st, vok, vmsg
 end
 
+local function tryNative(o, fn, opt)
+	if not nsi then return false, "no native saveinstance on this executor" end
+	local a = {
+		Decompile = true, DecompileTimeout = 10,
+		DecompileIgnore = { "Chat", "CoreGui", "CorePackages" },
+		NilInstances = false, RemovePlayerCharacters = true, SavePlayers = false,
+		MaxThreads = 3, ShowStatus = true, IgnoreDefaultProps = true, IsolateStarterPlayer = true,
+	}
+	if type(opt.nativeArgs) == "table" then for k, v in pairs(opt.nativeArgs) do a[k] = v end end
+	local ok, err = pcall(nsi, o, fn, a)
+	if ok then return true end
+	local b = { object = o, FilePath = fn, filename = fn }
+	for k, v in pairs(a) do b[k] = v end
+	local ok2 = pcall(nsi, b)
+	if ok2 then return true end
+	return false, tostring(err)
+end
+
 function M.save(o, fn, opt)
 	opt = opt or {}
+	if opt.native then
+		local nok, nerr = tryNative(o, fn, opt)
+		if nok then
+			print("Walke handed this save to your executor's native saveinstance (unions and meshes included). Watch its status window, then check your exec workspace folder for " .. tostring(fn))
+			return { ok = true, stage = "native" }
+		end
+		warn("[Walke] native saveinstance failed (" .. tostring(nerr) .. "); using Walke's own serializer instead")
+	end
 	local xml, st, vok, vmsg
 	local ok, err = pcall(function() xml, st, vok, vmsg = M.serialize(o, opt) end)
 	if not ok then
