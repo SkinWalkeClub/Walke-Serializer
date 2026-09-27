@@ -95,6 +95,6 @@ Check `Walke.Capabilities` to see what your executor supports.
 
 Created by **weegeemlg** on discord
 Credits: **The Skin Walke Team <3**
-Any Problems or errors please report it on our discord server or this repository
+Any Problems or errors please report it to my discord or in this repository
 
 https://discord.gg/cKSWynhPm5
