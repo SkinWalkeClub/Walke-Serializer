@@ -1072,14 +1072,14 @@ function M.save(o, fn, opt)
 			warn("Walke Serializer Error: could not write " .. tostring(fn))
 			return { ok = false, stage = "write", err = werr, xml = xml, stats = st }
 		end
-		print("Done Walke member, ur " .. fn .. " has been downloaded and set on your exec workspace succesfully, please visit ur workspace folder of your exec, cheers")
+		print("Wait that was all? LOL, well your " .. fn .. " has been downloaded and set on your exec workspace succesfully, please visit ur workspace folder of your exec, cheers")
 	end
 	return { ok = true, stage = "done", xml = xml, stats = st }
 end
 
 local un = "User"
 pcall(function() un = game:GetService("Players").LocalPlayer.Name end)
-print("Hello " .. un .. ", thanks for using Walke, enjoy doing anything u want and remember, nothing can stop u, cheers, we have the POWER, please now please now proceed to use walkesave() with the instance that you want and let Walke work for you ;)")
+print("Hello " .. un .. ", thanks for using Walke, enjoy doing anything u want and remember, nothing can stop u, now please proceed to use walkesave() with the instance that you want and let Walke work for you ;)")
 
 local function safeName(fn)
 	fn = tostring(fn):gsub("[/\\]", "_"):gsub("%.%.", "_"):gsub('[<>:"|%?%*%z\1-\31]', "")
