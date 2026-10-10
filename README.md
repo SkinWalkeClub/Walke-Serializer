@@ -93,7 +93,7 @@ Check `Walke.Capabilities` to see what your executor supports.
 - References to instances outside the save become nil
 - Terrain, Camera and CoreGui are excluded from the tree
 
-Created by **weegeemlg** on discord
+Created by **tankm3n** on discord
 Credits: **The Skin Walke Team <3**
 Any Problems or errors please report it to my discord or in this repository
 
