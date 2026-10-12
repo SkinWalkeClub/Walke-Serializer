@@ -1144,11 +1144,10 @@ local function api(o)
 	if o == nil then
 		return M.save(game, safeName(tostring(game.PlaceId) .. ".rbxmx"), nil)
 	end
-	local t = typeof(o)
+local t = typeof(o)
 	if t == "Instance" then
 		return M.save(o, safeName(nameOf(o) .. ".rbxmx"), nil)
-	endif
-	if t == "table" then
+	elseif t == "table" then
 		if typeof(o.object) == "Instance" then
 			return M.save(o.object, safeName(o.filename or (nameOf(o.object) .. ".rbxmx")), o.options or o)
 		elseif typeof(o[1]) == "Instance" then
