@@ -4,7 +4,7 @@
 --               unless Roblox adds new properties, classes,
 --              or changes existing types in their engine API
 --
---            Created ORIGINALLY by Weegee_MLG (Skin Walke Owner)
+--            Created ORIGINALLY by tankm3n (Skin Walke Owner)
 --=============================================================================
 
 print("\n" ..
