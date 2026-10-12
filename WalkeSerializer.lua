@@ -1,5 +1,5 @@
 --=============================================================================
---                        Walke Serializer v2.2
+--                        Walke Serializer v3.0
 --                 I don't think this will need updates
 --               unless Roblox adds new properties, classes,
 --              or changes existing types in their engine API
@@ -29,6 +29,7 @@ local gp = getproperties
 local dec
 local ghp
 local sscript
+local gsc
 do
 	local env = (getgenv and getgenv()) or _G or {}
 	if type(decompile) == "function" then
@@ -39,6 +40,11 @@ do
 		dec = env.getscriptsource
 	elseif type(env.decompilescript) == "function" then
 		dec = env.decompilescript
+	end
+	if type(getscriptbytecode) == "function" then
+		gsc = getscriptbytecode
+	elseif type(env.getscriptbytecode) == "function" then
+		gsc = env.getscriptbytecode
 	end
 	if type(gethiddenproperty) == "function" then
 		ghp = gethiddenproperty
@@ -226,7 +232,7 @@ end
 S["ColorSequence"] = function(n, v)
 	local b = {}
 	for _, k in ipairs(v.Keypoints) do
-		ins(b, nf(k.Time)); ins(b, nf(k.Value.R)); ins(b, nf(k.Value.G)); ins(b, nf(k.Value.B)); ins(b, "0")
+		ins(b, nf(k.Time)); ins(b, nf(k.Value.R)); ins(b, nf(k.Value.G)); ins(b, nf(k.Value.B))
 	end
 	return fmt('<ColorSequence name="%s">%s </ColorSequence>', n, cat(b, " "))
 end
@@ -340,6 +346,14 @@ end
 local function srcOf(o)
 	local s = ""
 	if dec then pcall(function() s = dec(o) end) end
+	if badSrc(s) and gsc then
+		pcall(function()
+			local bc = gsc(o)
+			if type(bc) == "string" and #bc > 0 then
+				s = "-- [Bytecode dump length: " .. #bc .. "]"
+			end
+		end)
+	end
 	if badSrc(s) then
 		s = ""
 		pcall(function() s = o.Source end)
@@ -422,10 +436,12 @@ local function mt(o, c)
 	return o:IsA(c)
 end
 
-local function ch(o)
+local function ch(o, ctx)
+	if ctx and ctx.kids[o] then return ctx.kids[o] end
 	local ok, r = pcall(function() return o:GetChildren() end)
-	if ok then return r end
-	return {}
+	if not ok or type(r) ~= "table" then r = {} end
+	if ctx then ctx.kids[o] = r end
+	return r
 end
 
 local function rd(o, p)
@@ -485,14 +501,17 @@ local function eq(a, b)
 	return ok and r
 end
 
-local function block()
+local function block(opt)
 	local b = {}
+	if opt and opt.blockCore == false then return b end
 	local function add(n)
 		local ok, s = pcall(function() return game:GetService(n) end)
 		if ok and s then b[s] = true end
 	end
-	add("CoreGui"); add("CorePackages"); add("RobloxPluginGuiService")
-	if gethui then
+	if not opt or opt.includeCore ~= true then
+		add("CoreGui"); add("CorePackages"); add("RobloxPluginGuiService")
+	end
+	if gethui and (not opt or opt.includeCore ~= true) then
 		local ok, h = pcall(gethui)
 		if ok and h then b[h] = true end
 	end
@@ -515,7 +534,7 @@ local function archive(u, ctx)
 	end
 end
 
-local function ser(v, seen, d)
+local function ser(v, seen, d, lim)
 	local t = type(v)
 	if t == "string" then return fmt("%q", v) end
 	if t == "number" then
@@ -524,7 +543,7 @@ local function ser(v, seen, d)
 	end
 	if t == "boolean" then return tostring(v) end
 	if t == "table" then
-		if seen[v] or d > 6 then return "nil" end
+		if seen[v] or d > (lim or 32) then return "nil" end
 		seen[v] = true
 		local ks = {}
 		for k in pairs(v) do
@@ -539,7 +558,7 @@ local function ser(v, seen, d)
 		local b = { "{" }
 		for _, k in ipairs(ks) do
 			local key = type(k) == "string" and "[" .. fmt("%q", k) .. "]" or "[" .. fmt("%.17g", k) .. "]"
-			local vs = ser(v[k], seen, d + 1)
+			local vs = ser(v[k], seen, d + 1, lim)
 			if vs then b[#b + 1] = key .. "=" .. vs .. "," end
 		end
 		b[#b + 1] = "}"
@@ -677,7 +696,7 @@ end
 local function keep(c, ctx)
 	if ctx.block[c] then return false end
 	if not insertable(c) then return false end
-	if ctx.opt.respectArchivable then
+	if ctx.opt.respectArchivable == true then
 		local ok, a = pcall(function() return c.Archivable end)
 		if ok and a == false then return false end
 	end
@@ -696,10 +715,22 @@ local function walk(o, ctx, dep)
 	ctx.done[o] = true
 	if ctx.opt.shouldCancel and ctx.opt.shouldCancel() then error("__walke_cancel__", 0) end
 	if dep > ctx.maxd then
-		ins(ctx.st.warns, "max depth reached, subtree truncated")
+		ctx.st.truncated = ctx.st.truncated + 1
+		if not ctx.warnedDepth then
+			ctx.warnedDepth = true
+			ins(ctx.st.warns, "max depth reached, subtree truncated")
+		end
 		return
 	end
 	local st = ctx.st
+	if st.inst >= ctx.maxi then
+		ctx.st.truncated = ctx.st.truncated + 1
+		if not ctx.warnedInstances then
+			ctx.warnedInstances = true
+			ins(ctx.st.warns, "max instance limit reached, remaining instances skipped")
+		end
+		return
+	end
 	st.inst = st.inst + 1
 	st.items = st.items + 1
 	local cn = o.ClassName
@@ -719,7 +750,7 @@ local function walk(o, ctx, dep)
 			local src = srcOf(o)
 			if src == "" and ctx.opt.rescue and o:IsA("ModuleScript") then
 				local rok, mod = pcall(require, o)
-				if rok and type(mod) == "table" then src = "return " .. ser(mod, {}, 0) end
+				if rok and type(mod) == "table" then src = "return " .. ser(mod, {}, 0, tonumber(ctx.opt.rescueDepth) or 32) end
 			end
 			if src ~= "" then
 				ins(out, fmt('<ProtectedString name="Source">%s</ProtectedString>', cdata(src)))
@@ -782,7 +813,7 @@ local function walk(o, ctx, dep)
 		if tg ~= "" then ins(out, tg); st.tags = st.tags + tc end
 	end
 	ins(out, '</Properties>')
-	for _, c in ipairs(ch(o)) do
+	for _, c in ipairs(ch(o, ctx)) do
 		if keep(c, ctx) then walk(c, ctx, dep + 1) end
 	end
 	ins(out, '</Item>')
@@ -808,7 +839,7 @@ local function walk(o, ctx, dep)
 			st.csg = st.csg + 1
 		end
 	end
-	if ctx.opt.yield ~= false and clk() - ctx.fs >= 0.014 then
+	if ctx.opt.yield ~= false and ctx.opt.noYield ~= true and clk() - ctx.fs >= ctx.yi then
 		if ctx.opt.onProgress then pcall(ctx.opt.onProgress, st.inst, st.items) end
 		pcall(function() task.wait() end)
 		ctx.fs = clk()
@@ -843,19 +874,19 @@ local function report(st, vok, vmsg)
 	elseif sz >= 1024 then n, u = sz / 1024, "KB" end
 	local ut = 0
 	for _ in pairs(st.uns) do ut = ut + 1 end
-	print(fmt("[Walke] deep:%s inst:%d items:%d props:%d attrs:%d attrLost:%d tags:%d assets:%d holo:%d unions:%d csg:%d dangling:%d skip:%d unsupported:%d refs:%d warns:%d out:%.1f%s time:%.2fs valid:%s(%s)",
-		tostring(st.deep), st.inst, st.items, st.props, st.attrs, st.attrLost, st.tags, st.assets, st.holo, st.unions, st.csg, st.dangling, st.skip, ut, st.refs, #st.warns, n, u, st.time or 0, tostring(vok), tostring(vmsg)))
+	print(fmt("[Walke] deep:%s inst:%d items:%d props:%d attrs:%d attrLost:%d tags:%d assets:%d holo:%d unions:%d csg:%d dangling:%d skip:%d unsupported:%d refs:%d trunc:%d warns:%d out:%.1f%s time:%.2fs valid:%s(%s)",
+		tostring(st.deep), st.inst, st.items, st.props, st.attrs, st.attrLost, st.tags, st.assets, st.holo, st.unions, st.csg, st.dangling, st.skip, ut, st.refs, st.truncated or 0, #st.warns, n, u, st.time or 0, tostring(vok), tostring(vmsg)))
 	if not st.deep then warn("[Walke] getproperties missing on this executor -> registry-only capture (fewer props). full-fidelity needs an executor with getproperties") end
 	if st.csg > 0 then warn("[Walke] " .. st.csg .. " CSG unions have no mesh saved (invisible in Studio); use holo=true for red position markers") end
 	for _, w in ipairs(st.warns) do warn("[Walke] " .. w) end
 end
 
-local function assign(o, refs, cnt, blk)
-	if refs[o] then return end
+local function assign(o, refs, cnt, blk, ctx, dep)
+	if refs[o] or not keep(o, ctx) or cnt.n >= ctx.maxi or dep > ctx.maxd then return end
 	cnt.n = cnt.n + 1
 	refs[o] = "RBX" .. cnt.n
-	for _, c in ipairs(ch(o)) do
-		if not blk[c] then assign(c, refs, cnt, blk) end
+	for _, c in ipairs(ch(o, ctx)) do
+		if not blk[c] then assign(c, refs, cnt, blk, ctx, dep + 1) end
 	end
 end
 
@@ -907,7 +938,7 @@ end
 
 local M = {}
 
-M.Version = "2.2"
+M.Version = "3.0"
 M.Capabilities = {
 	deep = gp ~= nil,
 	decompile = dec ~= nil,
@@ -924,13 +955,18 @@ M.Capabilities = {
 	assets = true,
 	progress = true,
 	archivableFilter = true,
+	includeCore = true,
 	meshInitialSize = ghp ~= nil,
 	unions = (ghp ~= nil) or (sscript ~= nil),
 	native = nsi ~= nil,
 	ignoreClasses = true,
 	noScripts = true,
 	cancellable = true,
-	chunkedWrite = true,
+	chunkedWrite = true,	
+	childCache = true,
+	limits = true,
+	cleanup = true,
+	nativeDecompileOptIn = true,
 	modes = { "safe", "strict", "debug", "silent" },
 	datatypes = {
 		"string", "boolean", "number", "Vector3", "Vector2", "Vector3int16",
@@ -942,60 +978,64 @@ M.Capabilities = {
 
 function M.serialize(root, opt)
 	opt = opt or {}
-	if opt.mode == nil then opt.mode = "safe" end
+	if opt.mode ~= "safe" and opt.mode ~= "strict" and opt.mode ~= "debug" and opt.mode ~= "silent" then opt.mode = "safe" end
 	local t0 = clk()
 	local ign = {}
 	if type(opt.ignore) == "table" then
 		for _, c in ipairs(opt.ignore) do ign[c] = true end
 	end
-	local blk = block()
+	local blk = block(opt)
 	local ents = normalize(root, blk)
 	local refs, cnt = {}, { n = 0 }
-	for _, e in ipairs(ents) do
-		if e.inst then
-			assign(e.inst, refs, cnt, blk)
-		else
-			for _, k in ipairs(e.kids) do assign(k, refs, cnt, blk) end
-		end
-	end
-	local st = { inst = 0, items = 0, props = 0, attrs = 0, attrLost = 0, tags = 0, assets = 0, holo = 0, unions = 0, csg = 0, dangling = 0, skip = 0, uns = {}, warns = {}, refs = cnt.n, empty = false, deep = (opt.deep ~= false) and (gp ~= nil) }
+	local st = { inst = 0, items = 0, props = 0, attrs = 0, attrLost = 0, tags = 0, assets = 0, holo = 0, unions = 0, csg = 0, dangling = 0, skip = 0, uns = {}, warns = {}, refs = 0, empty = false, deep = (opt.deep ~= false) and (gp ~= nil), truncated = 0 }
 	local out = {
 		'<roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">',
 		'<Meta name="ExplicitAutoJoints">true</Meta>',
 		'<External>null</External>',
 		'<External>nil</External>',
 	}
-	local ctx = { refs = refs, cnt = cnt, out = out, st = st, opt = opt, pc = {}, dc = {}, done = {}, dbg = {}, syn = 0, block = blk, ign = ign, maxd = opt.maxDepth or 4000, fs = clk(), dl = {}, ghp = ghp, shp = sscript }
+	local ctx = { refs = refs, cnt = cnt, out = out, st = st, opt = opt, pc = {}, dc = {}, done = {}, dbg = {}, syn = 0, block = blk, ign = ign, maxd = math.max(1, tonumber(opt.maxDepth) or 4000), maxi = math.max(0, tonumber(opt.maxInstances) or math.huge), yi = math.max(0.001, tonumber(opt.yieldInterval) or 0.014), fs = clk(), dl = {}, ghp = ghp, shp = sscript, kids = {} }
 	for _, e in ipairs(ents) do
 		if e.inst then
-			if keep(e.inst, ctx) then walk(e.inst, ctx, 1) end
+			assign(e.inst, refs, cnt, blk, ctx, 1)
 		else
-			ctx.syn = ctx.syn + 1
-			ins(out, fmt('<Item class="Folder" referent="RBXsyn%d">', ctx.syn))
-			ins(out, '<Properties>')
-			ins(out, S["string"]("Name", e.folder))
-			ins(out, '</Properties>')
-			st.items = st.items + 1
-			for _, k in ipairs(e.kids) do
-				if keep(k, ctx) then walk(k, ctx, 2) end
+			for _, k in ipairs(e.kids) do assign(k, refs, cnt, blk, ctx, 2) end
+		end
+	end
+	st.refs = cnt.n
+	local ok, err = xpcall(function()
+		for _, e in ipairs(ents) do
+			if e.inst then
+				if keep(e.inst, ctx) then walk(e.inst, ctx, 1) end
+			else
+				ctx.syn = ctx.syn + 1
+				ins(out, fmt('<Item class="Folder" referent="RBXsyn%d">', ctx.syn))
+				ins(out, '<Properties>')
+				ins(out, S["string"]("Name", e.folder))
+				ins(out, '</Properties>')
+				st.items = st.items + 1
+				for _, k in ipairs(e.kids) do
+					if keep(k, ctx) then walk(k, ctx, 2) end
+				end
+				ins(out, '</Item>')
 			end
-			ins(out, '</Item>')
 		end
-	end
-	if opt.terrain then
-		ctx.syn = ctx.syn + 1
-		local ti = terrainItem(ctx, "RBXsyn" .. ctx.syn)
-		if ti ~= "" then
-			ins(out, ti)
-			st.items = st.items + 1
+		if opt.terrain then
+			ctx.syn = ctx.syn + 1
+			local ti = terrainItem(ctx, "RBXsyn" .. ctx.syn)
+			if ti ~= "" then
+				ins(out, ti)
+				st.items = st.items + 1
+			end
 		end
-	end
-	ins(out, '</roblox>')
-	st.empty = (st.items == 0)
+		ins(out, '</roblox>')
+		st.empty = (st.items == 0)
+	end, function(x) return x end)
 	for k, d in pairs(ctx.dc) do
 		if d then pcall(function() d:Destroy() end) end
 		ctx.dc[k] = nil
 	end
+	if not ok then error(err, 0) end
 	local xml = cat(out, "\n")
 	st.bytes = #xml
 	st.refs = cnt.n
@@ -1009,8 +1049,8 @@ end
 local function tryNative(o, fn, opt)
 	if not nsi then return false, "no native saveinstance on this executor" end
 	local a = {
-		Decompile = true, DecompileTimeout = 10,
-		DecompileIgnore = { "Chat", "CoreGui", "CorePackages" },
+		Decompile = opt.nativeDecompile == true, DecompileTimeout = tonumber(opt.decompileTimeout) or 10,
+		DecompileIgnore = opt.includeCore and {} or { "Chat", "CoreGui", "CorePackages" },
 		NilInstances = false, RemovePlayerCharacters = true, SavePlayers = false,
 		MaxThreads = 3, ShowStatus = true, IgnoreDefaultProps = true, IsolateStarterPlayer = true,
 	}
@@ -1051,18 +1091,19 @@ function M.save(o, fn, opt)
 		warn("Walke Serializer Error: validation " .. tostring(vmsg))
 		return { ok = false, stage = "validate", err = vmsg, xml = xml, stats = st }
 	end
-	if writefile then
+	if type(writefile) == "function" then
 		local wok, werr
-		if #xml > 20000000 and appendfile and delfile then
+		local chunk = math.max(65536, tonumber(opt.writeChunkSize) or 4000000)
+		if #xml > chunk and type(appendfile) == "function" and type(delfile) == "function" then
 			wok, werr = pcall(function()
 				pcall(delfile, fn)
 				local n = #xml
 				local i = 1
 				local first = true
 				while i <= n do
-					local part = xml:sub(i, i + 4000000 - 1)
+					local part = xml:sub(i, math.min(i + chunk - 1, n))
 					if first then writefile(fn, part) first = false else appendfile(fn, part) end
-					i = i + 4000000
+					i = i + chunk
 				end
 			end)
 		else
@@ -1072,9 +1113,11 @@ function M.save(o, fn, opt)
 			warn("Walke Serializer Error: could not write " .. tostring(fn))
 			return { ok = false, stage = "write", err = werr, xml = xml, stats = st }
 		end
-		print("Wait that was all? LOL, well your " .. fn .. " has been downloaded and set on your exec workspace succesfully, please visit ur workspace folder of your exec, cheers")
+		print("[Walke] wrote " .. tostring(fn))
+	else
+		return { ok = true, stage = "serialized", xml = xml, stats = st, valid = vok, message = vmsg }
 	end
-	return { ok = true, stage = "done", xml = xml, stats = st }
+	return { ok = true, stage = "done", xml = xml, stats = st, valid = vok, message = vmsg }
 end
 
 local un = "User"
@@ -1104,7 +1147,8 @@ local function api(o)
 	local t = typeof(o)
 	if t == "Instance" then
 		return M.save(o, safeName(nameOf(o) .. ".rbxmx"), nil)
-	elseif t == "table" then
+	endif
+	if t == "table" then
 		if typeof(o.object) == "Instance" then
 			return M.save(o.object, safeName(o.filename or (nameOf(o.object) .. ".rbxmx")), o.options or o)
 		elseif typeof(o[1]) == "Instance" then
@@ -1118,6 +1162,5 @@ end
 local g = getgenv and getgenv() or _G
 g.walkesave = api
 g.__WALKE_API = api
-if not g.saveinstance then g.saveinstance = api end
 
 return M
