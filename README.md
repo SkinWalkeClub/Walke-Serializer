@@ -40,7 +40,7 @@ Options go in the same table as `object`, or under `options = { ... }`.
 ```
 mode              "safe" (default) | "strict" | "debug" | "silent"
 deep              false = registry properties only
-minify            false = keep default valued properties
+minify            false = keep default-valued properties
 validate          false = skip output validation
 stats             false = no console report
 attributes        false = skip attributes
@@ -56,10 +56,15 @@ skipInvisible     true  = skip parts with Transparency 1
 respectArchivable true  = skip instances with Archivable off
 ignore            { "ClassName", ... } classes to skip
 maxDepth          max hierarchy depth (default 4000)
+maxInstances      max total instances allowed (default math.huge)
 yield             false = no yielding (faster, may freeze)
+yieldInterval     seconds between adaptive yields (default 0.014)
+includeCore       true  = include core GUI/services
+writeChunkSize    byte chunk size for writing large files (default 4000000)
 onProgress        function(instances, items)
 shouldCancel      function() return true to cancel
-native            true  = hand the whole save to your executor own saveinstance (best unions/meshes)
+native            true  = hand the whole save to your executor's own saveinstance
+nativeDecompile   true  = enable native script decompilation
 nativeArgs        { ... } = overrides passed to that native saver
 ```
 **Modes:** `safe` skips unsupported properties quietly, `strict` errors on the first one, `debug` warns on every skip, `silent` prints nothing.
