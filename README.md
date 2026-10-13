@@ -98,6 +98,9 @@ Check `Walke.Capabilities` to see what your executor supports.
 - References to instances outside the save become nil
 - Terrain, Camera, and CoreGui handling can be managed via options
 
+One of the Games (Fencing) that got Serialized with Walke, Recreated (Scripts were manual, like not constructed by this serializer, reason explain on limits) to it's perfection:
+https://www.roblox.com/games/113164940588216/Fencing
+
 Created by **tankm3n** on discord
 
 Credits: **The Skin Walke Team <3**
